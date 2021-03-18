@@ -137,9 +137,6 @@ subprojects {
   apply plugin: 'signing'
   apply plugin: 'checkstyle'
 
-  if (!JavaVersion.current().isJava9Compatible())
-    apply plugin: 'findbugs'
-
   sourceCompatibility = minJavaVersion
   targetCompatibility = minJavaVersion
 
@@ -355,22 +352,6 @@ subprojects {
   }
   test.dependsOn('checkstyleMain', 'checkstyleTest')
 
-  if (!JavaVersion.current().isJava9Compatible()) {
-    findbugs {
-      toolVersion = "3.0.1"
-      excludeFilter = file("$rootDir/gradle/findbugs-exclude.xml")
-      ignoreFailures = false
-    }
-    test.dependsOn('findbugsMain')
-
-    tasks.withType(FindBugs) {
-      reports {
-        xml.enabled(project.hasProperty('xmlFindBugsReport'))
-        html.enabled(!project.hasProperty('xmlFindBugsReport'))
-      }
-    }
-  }
-
   // Ignore core since its a scala project
   if (it.path != ':core') {
     apply plugin: "jacoco"
@@ -434,32 +415,6 @@ def fineTuneEclipseClasspathFile(eclipse, project) {
     }
   }
 }
-
-// Aggregates all jacoco results into the root project directory
-task jacocoRootReport(type: org.gradle.testing.jacoco.tasks.JacocoReport) {
-  def javaProjects = subprojects.findAll { it.path != ':core' }
-
-  description = 'Generates an aggregate report from all subprojects'
-  dependsOn(javaProjects.test)
-
-  additionalSourceDirs = files(javaProjects.sourceSets.main.allSource.srcDirs)
-  sourceDirectories = files(javaProjects.sourceSets.main.allSource.srcDirs)
-  classDirectories =  files(javaProjects.sourceSets.main.output)
-  executionData = files(javaProjects.jacocoTestReport.executionData)
-
-  reports {
-    html.enabled = true
-    xml.enabled = true
-  }
-
-  // workaround to ignore projects that don't have any tests at all
-  onlyIf = { true }
-  doFirst {
-    executionData = files(executionData.findAll { it.exists() })
-  }
-}
-
-task reportCoverage(dependsOn: ['jacocoRootReport', 'core:reportCoverage'])
 
 for ( sv in availableScalaVersions ) {
   String taskSuffix = sv.replaceAll("\\.", "_")
@@ -535,7 +490,6 @@ project(':core') {
   println "Building project 'core' with Scala version ${versions.scala}"
 
   apply plugin: 'scala'
-  apply plugin: "org.scoverage"
   archivesBaseName = "kafka_${versions.baseScala}"
 
   dependencies {
@@ -578,18 +532,7 @@ project(':core') {
     testCompile libs.slf4jlog4j
     testCompile libs.jfreechart
 
-    scoverage libs.scoveragePlugin
-    scoverage libs.scoverageRuntime
   }
-  
-  scoverage {
-    reportDir = file("${rootProject.buildDir}/scoverage")
-    highlighting = false
-  }
-  checkScoverage {
-    minimumRate = 0.0
-  }
-  checkScoverage.shouldRunAfter('test')
 
   configurations {
     // manually excludes some unnecessary dependencies

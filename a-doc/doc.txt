@@ -1,0 +1,43 @@
+
+
+
+
+SocketServer#run
+
+SocketServer#addProcessors
+
+new RequestChannel.Request
+
+
+RequestChannel#sendResponse
+
+KafkaRequestHandlerPool
+
+FileRecords
+
+
+
+cd /work/projects/opensource/kafka
+./gradlew jar -x test
+
+scp -P 3379 ./core/build/libs/kafka_2.11-2.0.0.jar dw-work-006:/home/dcadmin/kafka_2.11-2.0.0/libs/kafka_2.11-2.0.0.jar
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
